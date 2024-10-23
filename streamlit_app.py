@@ -8,8 +8,11 @@ from io import BytesIO
 class CycleGANModel:
     def _init_(self, model_data):
         try:
-            # Leer el modelo desde el buffer en memoria
-            model_buffer = BytesIO(model_data.read())
+            # Leer el archivo subido desde el buffer de BytesIO
+            model_bytes = model_data.read()
+            model_buffer = BytesIO(model_bytes)
+            
+            # Cargar el modelo desde el buffer
             state_dict = torch.load(model_buffer, map_location=torch.device('cpu'))
 
             # Crear una instancia del modelo base
@@ -19,7 +22,7 @@ class CycleGANModel:
             self.model.load_state_dict(state_dict)
             self.model.eval()
         except Exception as e:
-            st.error(f"Error al cargar los pesos del modelo: {e}")
+            st.error(f"Error al cargar el modelo: {e}")
             self.model = None
 
     def build_model(self):
@@ -32,7 +35,7 @@ class CycleGANModel:
         class SimpleCycleGAN(nn.Module):
             def _init_(self):
                 super(SimpleCycleGAN, self)._init_()
-                # Define aquí la arquitectura de tu modelo. 
+                # Define aquí la arquitectura de tu modelo
                 # Esto es solo un placeholder; ajusta la arquitectura según tu modelo entrenado.
                 self.conv = nn.Conv2d(3, 3, kernel_size=3, padding=1)
 
@@ -88,24 +91,27 @@ if model_file and uploaded_image:
     model = CycleGANModel(model_file)
 
     # Transformar la imagen con el modelo cargado
-    transformed_image = model.transform(resized_image)
+    if model and model.model is not None:
+        transformed_image = model.transform(resized_image)
 
-    if transformed_image:
-        st.image(transformed_image, caption="Imagen transformada por CycleGAN", use_column_width=True)
+        if transformed_image:
+            st.image(transformed_image, caption="Imagen transformada por CycleGAN", use_column_width=True)
 
-        # Botón para descargar la imagen transformada
-        buf = BytesIO()
-        transformed_image.save(buf, format='PNG')
-        byte_im = buf.getvalue()
+            # Botón para descargar la imagen transformada
+            buf = BytesIO()
+            transformed_image.save(buf, format='PNG')
+            byte_im = buf.getvalue()
 
-        st.download_button(
-            label="Descargar imagen transformada",
-            data=byte_im,
-            file_name="imagen_transformada.png",
-            mime="image/png"
-        )
+            st.download_button(
+                label="Descargar imagen transformada",
+                data=byte_im,
+                file_name="imagen_transformada.png",
+                mime="image/png"
+            )
+        else:
+            st.error("No se pudo transformar la imagen debido a un problema con el modelo.")
     else:
-        st.error("No se pudo transformar la imagen debido a un problema con el modelo.")
+        st.error("No se pudo cargar el modelo.")
 elif model_file is None:
     st.info("Por favor, sube un modelo de CycleGAN en formato .pth")
 elif uploaded_image is None:

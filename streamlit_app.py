@@ -5,9 +5,6 @@ import torchvision.transforms as transforms
 import os
 from collections import OrderedDict
 
-# Importar la arquitectura de CycleGAN
-from cyclegan_model import Generator  # Asegúrate de que 'cyclegan_model' contenga la implementación de CycleGAN
-
 # Título de la aplicación
 st.title("Subir Modelo y Probar Imagen con CycleGAN")
 
@@ -31,14 +28,15 @@ if uploaded_model is not None:
             name = k.replace("module.", "")  # Eliminar 'module.' del nombre de las claves
             new_state_dict[name] = v
 
-        # Crear una instancia del generador de CycleGAN y cargar el estado
-        model = Generator()  # Asegúrate de que la implementación del Generador esté correcta
+        # Crear una instancia del modelo y cargar el estado
+        from your_model_architecture import YourModel  # Reemplaza con tu propia arquitectura
+        model = YourModel()
         model.load_state_dict(new_state_dict)
         model.eval()
 
-        st.success("Modelo CycleGAN cargado exitosamente.")
+        st.success("Modelo cargado exitosamente.")
     except Exception as e:
-        st.error(f"Error al cargar el modelo CycleGAN: {str(e)}")
+        st.error(f"Error al cargar el modelo: {str(e)}")
 else:
     st.warning("Por favor, sube un archivo de modelo (.pth)")
 
@@ -61,10 +59,10 @@ if uploaded_image is not None:
     trapezoid_mask = Image.new("L", (256, 256), 0)
     draw = ImageDraw.Draw(trapezoid_mask)
     # Definir los vértices del trapecio
-    top_left = (104, 0)
-    top_right = (152, 0)
-    bottom_left = (30, 256)
-    bottom_right = (226, 256)
+    top_left = (64, 0)
+    top_right = (192, 0)
+    bottom_left = (0, 256)
+    bottom_right = (256, 256)
     # Dibujar el trapecio en la máscara
     draw.polygon([top_left, top_right, bottom_right, bottom_left], fill=255)
 
@@ -88,17 +86,20 @@ if uploaded_model is not None and uploaded_image is not None:
     # Asegurarse que el modelo está en modo evaluación
     if 'model' in locals():
         try:
-            # Imagen procesada por el modelo CycleGAN
+            # Imagen procesada por ambos lados (de ida y vuelta con CycleGAN)
             with torch.no_grad():
-                generated_image = model(input_image)[0]  # Generar la imagen
+                generated_image_1 = model(input_image)[0]  # Primera transformación
+                generated_image_2 = model(generated_image_1.unsqueeze(0))[0]  # De vuelta
 
             # Convertir a imagen para mostrarla
-            generated_image_pil = transforms.ToPILImage()(generated_image.squeeze(0))
+            generated_image_1_pil = transforms.ToPILImage()(generated_image_1.squeeze(0))
+            generated_image_2_pil = transforms.ToPILImage()(generated_image_2.squeeze(0))
 
-            # Mostrar la imagen generada
-            st.image(generated_image_pil, caption="Imagen generada por CycleGAN", use_column_width=True)
+            # Mostrar las imágenes generadas
+            st.image(generated_image_1_pil, caption="Imagen generada - Primera transformación", use_column_width=True)
+            st.image(generated_image_2_pil, caption="Imagen generada - Segunda transformación", use_column_width=True)
         except Exception as e:
-            st.error(f"Error al procesar la imagen con CycleGAN: {str(e)}")
+            st.error(f"Error al procesar la imagen con el modelo: {str(e)}")
     else:
         st.warning("El modelo no ha sido cargado correctamente.")
 else:

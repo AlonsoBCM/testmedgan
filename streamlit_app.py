@@ -1,6 +1,6 @@
 import streamlit as st
 import torch
-from PIL import Image
+from PIL import Image, ImageDraw
 import torchvision.transforms as transforms
 import os
 from collections import OrderedDict
@@ -54,6 +54,21 @@ if uploaded_image is not None:
     # Convertir la imagen a blanco y negro
     image = image.convert('L')
     st.image(image, caption="Imagen en blanco y negro", use_column_width=True)
+
+    # Crear una máscara en forma de trapecio
+    trapezoid_mask = Image.new("L", (256, 256), 0)
+    draw = ImageDraw.Draw(trapezoid_mask)
+    # Definir los vértices del trapecio
+    top_left = (64, 0)
+    top_right = (192, 0)
+    bottom_left = (0, 256)
+    bottom_right = (256, 256)
+    # Dibujar el trapecio en la máscara
+    draw.polygon([top_left, top_right, bottom_right, bottom_left], fill=255)
+
+    # Aplicar la máscara a la imagen
+    image = Image.composite(image, Image.new("L", (256, 256), 0), trapezoid_mask)
+    st.image(image, caption="Imagen con recorte trapezoidal", use_column_width=True)
 else:
     st.warning("Por favor, sube una imagen (.png o .jpg)")
 

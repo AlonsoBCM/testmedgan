@@ -1,73 +1,78 @@
 import streamlit as st
 from PIL import Image
-import io
+import torch
+import torchvision.transforms as transforms
+import requests
+from io import BytesIO
 
-# from torchvision import transforms  # Comentado ya que es parte de CycleGAN
+# Definir el modelo de CycleGAN
+class CycleGANModel:
+    def _init_(self, model_url):
+        # Descargar el modelo desde GitHub
+        response = requests.get(model_url)
+        response.raise_for_status()  # Verifica si la descarga fue exitosa
+        model_data = BytesIO(response.content)
+        self.model = torch.load(model_data, map_location=torch.device('cpu'))
+        self.model.eval()
 
-# Placeholder para el modelo de CycleGAN
-# class CycleGANModel:
-#     def _init_(self, model_path):
-#         self.model = torch.load(model_path, map_location=torch.device('cpu'))
-#         self.model.eval()
+    def transform(self, image):
+        # Transformar la imagen de PIL a tensor
+        transform_to_tensor = transforms.Compose([
+            transforms.Resize((256, 256)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+        image_tensor = transform_to_tensor(image).unsqueeze(0)
 
-#     def transform(self, image):
-#         with torch.no_grad():
-#             transformed_image = self.model(image)
-#         return transformed_image
+        # Transformar la imagen usando el modelo de CycleGAN
+        with torch.no_grad():
+            transformed_tensor = self.model(image_tensor)[0]
 
-# Función para redimensionar la imagen
-def resize_image(image, size=(256, 256)):
-    return image.resize(size)
+        # Convertir el tensor transformado de nuevo a imagen PIL
+        transform_to_image = transforms.Compose([
+            transforms.Normalize((-1, -1, -1), (2, 2, 2)),
+            transforms.ToPILImage()
+        ])
+        transformed_image = transform_to_image(transformed_tensor)
 
-# # Función para convertir la imagen a tensor
-# def image_to_tensor(image):
-#     transform = transforms.ToTensor()
-#     return transform(image).unsqueeze(0)
+        return transformed_image
 
-# # Función para convertir el tensor a imagen
-# def tensor_to_image(tensor):
-#     transform = transforms.ToPILImage()
-#     image = transform(tensor.squeeze(0))
-#     return image
+# URL del modelo de CycleGAN
+model_url = "https://github.com/AlonsoBCM/testmedgan/raw/main/modelos/modelo_entrenado.pth"
 
-# Configuración de la página de Streamlit
-st.title("Transformación de imágenes con CycleGAN")
+try:
+    # Cargar el modelo de CycleGAN
+    model = CycleGANModel(model_url)
 
-# Carga de la imagen
-uploaded_file = st.file_uploader("Sube una imagen", type=["jpg", "jpeg", "png"])
+    # Configuración de la página de Streamlit
+    st.title("Transformación de imágenes con CycleGAN")
 
-if uploaded_file is not None:
-    # Abrir y redimensionar la imagen
-    image = Image.open(uploaded_file)
-    resized_image = resize_image(image)
+    # Cargar la imagen
+    uploaded_file = st.file_uploader("Sube una imagen", type=["jpg", "jpeg", "png"])
 
-    # Mostrar la imagen redimensionada
-    st.image(resized_image, caption='Imagen redimensionada a 256x256', use_column_width=True)
+    if uploaded_file is not None:
+        # Mostrar la imagen original y sus dimensiones
+        image = Image.open(uploaded_file)
+        st.image(image, caption=f"Imagen original - Dimensiones: {image.size}", use_column_width=True)
 
-    # Convertir la imagen redimensionada a tensor (comentado para CycleGAN)
-    # image_tensor = image_to_tensor(resized_image)
+        # Redimensionar la imagen a 256x256
+        resized_image = image.resize((256, 256))
+        st.image(resized_image, caption=f"Imagen redimensionada a 256x256 - Dimensiones: {resized_image.size}", use_column_width=True)
 
-    # Placeholder para cargar el modelo de CycleGAN (comentado)
-    # model_path = 'path_a_tu_modelo/cyclegan_modelo.pt'  # Cambia este path a la ubicación de tu modelo
-    # model = CycleGANModel(model_path)
+        # Transformar la imagen con CycleGAN
+        transformed_image = model.transform(resized_image)
+        st.image(transformed_image, caption="Imagen transformada por CycleGAN (A to B)", use_column_width=True)
 
-    # Transformar la imagen con el modelo de CycleGAN (comentado)
-    # transformed_tensor = model.transform(image_tensor)
+        # Botón para descargar la imagen transformada
+        buf = BytesIO()
+        transformed_image.save(buf, format='PNG')
+        byte_im = buf.getvalue()
 
-    # Convertir el tensor transformado a imagen (comentado)
-    # transformed_image = tensor_to_image(transformed_tensor)
-
-    # Mostrar la imagen transformada (comentado)
-    # st.image(transformed_image, caption='Imagen transformada por CycleGAN', use_column_width=True)
-
-    # Botón para descargar la imagen transformada (comentado)
-    # buf = io.BytesIO()
-    # transformed_image.save(buf, format='PNG')
-    # byte_im = buf.getvalue()
-
-    # st.download_button(
-    #     label="Descargar imagen transformada",
-    #     data=byte_im,
-    #     file_name="imagen_transformada.png",
-    #     mime="image/png"
-    # )
+        st.download_button(
+            label="Descargar imagen transformada",
+            data=byte_im,
+            file_name="imagen_transformada.png",
+            mime="image/png"
+        )
+except Exception as e:
+    st.error(f"Error al cargar el modelo: {e}")

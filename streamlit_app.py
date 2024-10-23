@@ -5,17 +5,17 @@ import torchvision.transforms as transforms
 import requests
 from io import BytesIO
 
-# Definir el modelo de CycleGAN
+# Clase para el modelo de CycleGAN
 class CycleGANModel:
     def _init_(self, model_url):
         # Descargar el modelo desde la URL proporcionada
         response = requests.get(model_url)
-        response.raise_for_status()  # Verifica si la descarga fue exitosa
+        response.raise_for_status()  # Asegurar que la descarga fue exitosa
 
-        # Cargar el modelo de CycleGAN en modo evaluación
+        # Cargar el modelo desde los datos descargados
         model_data = BytesIO(response.content)
         self.model = torch.load(model_data, map_location=torch.device('cpu'))
-        self.model.eval()
+        self.model.eval()  # Colocar el modelo en modo evaluación
 
     def transform(self, image):
         # Transformar la imagen de PIL a tensor
@@ -26,7 +26,7 @@ class CycleGANModel:
         ])
         image_tensor = transform_to_tensor(image).unsqueeze(0)
 
-        # Transformar la imagen usando el modelo de CycleGAN
+        # Aplicar la transformación usando el modelo
         with torch.no_grad():
             transformed_tensor = self.model(image_tensor)[0]
 
@@ -39,12 +39,12 @@ class CycleGANModel:
 
         return transformed_image
 
-# URL del modelo de CycleGAN (ajustada para descargar el modelo desde GitHub)
+# URL del modelo de CycleGAN
 model_url = "https://github.com/AlonsoBCM/testmedgan/raw/main/modelos/modelo_entrenado.pth"
 
 # Intentar cargar el modelo de CycleGAN
 try:
-    model = CycleGANModel(model_url)
+    model = CycleGANModel(model_url)  # Llamada corregida al constructor
 
     # Configuración de la página de Streamlit
     st.title("Transformación de imágenes con CycleGAN")

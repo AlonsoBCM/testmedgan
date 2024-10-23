@@ -5,6 +5,9 @@ import torchvision.transforms as transforms
 import os
 from collections import OrderedDict
 
+# Importar la arquitectura de CycleGAN
+from cyclegan_model import Generator  # Asegúrate de que 'cyclegan_model' contenga la implementación de CycleGAN
+
 # Título de la aplicación
 st.title("Subir Modelo y Probar Imagen con CycleGAN")
 
@@ -28,15 +31,14 @@ if uploaded_model is not None:
             name = k.replace("module.", "")  # Eliminar 'module.' del nombre de las claves
             new_state_dict[name] = v
 
-        # Crear una instancia del modelo y cargar el estado
-        from your_model_architecture import YourModel  # Reemplaza con tu propia arquitectura
-        model = YourModel()
+        # Crear una instancia del generador de CycleGAN y cargar el estado
+        model = Generator()  # Asegúrate de que la implementación del Generador esté correcta
         model.load_state_dict(new_state_dict)
         model.eval()
 
-        st.success("Modelo cargado exitosamente.")
+        st.success("Modelo CycleGAN cargado exitosamente.")
     except Exception as e:
-        st.error(f"Error al cargar el modelo: {str(e)}")
+        st.error(f"Error al cargar el modelo CycleGAN: {str(e)}")
 else:
     st.warning("Por favor, sube un archivo de modelo (.pth)")
 
@@ -86,20 +88,17 @@ if uploaded_model is not None and uploaded_image is not None:
     # Asegurarse que el modelo está en modo evaluación
     if 'model' in locals():
         try:
-            # Imagen procesada por ambos lados (de ida y vuelta con CycleGAN)
+            # Imagen procesada por el modelo CycleGAN
             with torch.no_grad():
-                generated_image_1 = model(input_image)[0]  # Primera transformación
-                generated_image_2 = model(generated_image_1.unsqueeze(0))[0]  # De vuelta
+                generated_image = model(input_image)[0]  # Generar la imagen
 
             # Convertir a imagen para mostrarla
-            generated_image_1_pil = transforms.ToPILImage()(generated_image_1.squeeze(0))
-            generated_image_2_pil = transforms.ToPILImage()(generated_image_2.squeeze(0))
+            generated_image_pil = transforms.ToPILImage()(generated_image.squeeze(0))
 
-            # Mostrar las imágenes generadas
-            st.image(generated_image_1_pil, caption="Imagen generada - Primera transformación", use_column_width=True)
-            st.image(generated_image_2_pil, caption="Imagen generada - Segunda transformación", use_column_width=True)
+            # Mostrar la imagen generada
+            st.image(generated_image_pil, caption="Imagen generada por CycleGAN", use_column_width=True)
         except Exception as e:
-            st.error(f"Error al procesar la imagen con el modelo: {str(e)}")
+            st.error(f"Error al procesar la imagen con CycleGAN: {str(e)}")
     else:
         st.warning("El modelo no ha sido cargado correctamente.")
 else:

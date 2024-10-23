@@ -59,10 +59,10 @@ if uploaded_image is not None:
     trapezoid_mask = Image.new("L", (256, 256), 0)
     draw = ImageDraw.Draw(trapezoid_mask)
     # Definir los vértices del trapecio
-    top_left = (64, 0)
-    top_right = (192, 0)
-    bottom_left = (0, 256)
-    bottom_right = (256, 256)
+    top_left = (104, 0)
+    top_right = (152, 0)
+    bottom_left = (30, 256)
+    bottom_right = (226, 256)
     # Dibujar el trapecio en la máscara
     draw.polygon([top_left, top_right, bottom_right, bottom_left], fill=255)
 

@@ -7,9 +7,10 @@ from io import BytesIO
 # Clase para el modelo de CycleGAN
 class CycleGANModel:
     def _init_(self, model_data):
-        # Cargar el modelo desde los datos proporcionados
         try:
-            state_dict = torch.load(model_data, map_location=torch.device('cpu'))
+            # Leer el modelo desde el buffer en memoria
+            model_buffer = BytesIO(model_data.read())
+            state_dict = torch.load(model_buffer, map_location=torch.device('cpu'))
 
             # Crear una instancia del modelo base
             self.model = self.build_model()
@@ -83,7 +84,7 @@ if model_file and uploaded_image:
     resized_image = image.resize((256, 256))
     st.image(resized_image, caption=f"Imagen redimensionada a 256x256 - Dimensiones: {resized_image.size}", use_column_width=True)
 
-    # Instanciar el modelo de CycleGAN
+    # Instanciar el modelo de CycleGAN con el archivo subido
     model = CycleGANModel(model_file)
 
     # Transformar la imagen con el modelo cargado

@@ -1,79 +1,137 @@
 import streamlit as st
-import torch
 from PIL import Image
+import torch
 import torchvision.transforms as transforms
-import os
+from io import BytesIO
+from collections import OrderedDict
 
-# Título de la aplicación
-st.title("Subir Modelo y Probar Imagen con CycleGAN")
-
-# Subir archivos
-uploaded_model = st.file_uploader("Sube tu modelo .pth", type=["pth"])
-uploaded_image = st.file_uploader("Sube tu imagen .png o .jpg", type=["png", "jpg"])
-
-# Comprobar si se subieron los archivos
-if uploaded_model is not None:
-    st.success("Modelo .pth subido correctamente.")
-    # Guardar el modelo subido en el sistema de archivos
-    with open("model.pth", "wb") as f:
-        f.write(uploaded_model.read())
-    # Cargar el modelo con Torch
-    try:
-        state_dict = torch.load("model.pth", map_location=torch.device('cpu'))
-        # Crear una instancia del modelo y cargar el estado
-        # Nota: Debes definir tu arquitectura de modelo aquí
-        from your_model_architecture import YourModel  # Reemplaza con tu propia arquitectura
-        model = YourModel()
-        model.load_state_dict(state_dict)
-        model.eval()
-        st.success("Modelo cargado exitosamente.")
-    except Exception as e:
-        st.error(f"Error al cargar el modelo: {str(e)}")
-else:
-    st.warning("Por favor, sube un archivo de modelo (.pth)")
-
-if uploaded_image is not None:
-    st.success("Imagen subida correctamente.")
-    # Cargar la imagen con PIL
-    image = Image.open(uploaded_image)
-    # Convertir a PNG si la imagen es JPG
-    if image.format == "JPEG":
-        image = image.convert('RGB')
-    # Redimensionar la imagen a 256x256
-    image = image.resize((256, 256))
-    st.image(image, caption="Imagen redimensionada (256x256)", use_column_width=True)
-else:
-    st.warning("Por favor, sube una imagen (.png o .jpg)")
-
-# Aplicar el modelo si ambos archivos están cargados
-if uploaded_model is not None and uploaded_image is not None:
-    # Transformación de imagen para ser compatible con PyTorch
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-    ])
-
-    # Aplicar transformación a la imagen
-    input_image = transform(image).unsqueeze(0)  # Añadir dimensión de batch
-
-    # Asegurarse que el modelo está en modo evaluación
-    if 'model' in locals():
+# Clase para el modelo de CycleGAN
+class CycleGANModel:
+    def __init__(self, model_data):  # Cambio aquí: __init__ en lugar de _init_
         try:
-            # Imagen procesada por ambos lados (de ida y vuelta con CycleGAN)
-            with torch.no_grad():
-                generated_image_1 = model(input_image)[0]  # Primera transformación
-                generated_image_2 = model(generated_image_1.unsqueeze(0))[0]  # De vuelta
+            # Leer el archivo subido desde el buffer de BytesIO
+            model_bytes = model_data.read()
+            
+            # Verificar el tamaño del archivo subido
+            st.write(f"Tamaño del archivo subido: {len(model_bytes)} bytes")
 
-            # Convertir a imagen para mostrarla
-            generated_image_1_pil = transforms.ToPILImage()(generated_image_1.squeeze(0))
-            generated_image_2_pil = transforms.ToPILImage()(generated_image_2.squeeze(0))
+            # Convertir el archivo a BytesIO para ser leído por torch.load
+            model_buffer = BytesIO(model_bytes)
+            
+            # Intentar cargar el estado del modelo
+            state_dict = torch.load(model_buffer, map_location=torch.device('cpu'))
 
-            # Mostrar las imágenes generadas
-            st.image(generated_image_1_pil, caption="Imagen generada - Primera transformación", use_column_width=True)
-            st.image(generated_image_2_pil, caption="Imagen generada - Segunda transformación", use_column_width=True)
+            # Eliminar el prefijo 'module.' si existe
+            new_state_dict = OrderedDict()
+            for k, v in state_dict.items():
+                name = k.replace("module.", "")  # Eliminar 'module.' del nombre de las claves
+                new_state_dict[name] = v
+
+            # Crear una instancia del modelo base
+            self.model = self.build_model()
+
+            # Cargar los pesos en el modelo
+            self.model.load_state_dict(new_state_dict)
+            self.model.eval()
+
+            st.success("Modelo cargado exitosamente.")
         except Exception as e:
-            st.error(f"Error al procesar la imagen con el modelo: {str(e)}")
+            st.error(f"Error al cargar el modelo: {e}")
+            self.model = None
+
+    def build_model(self):
+        """
+        Define la arquitectura base del modelo aquí.
+        Debes adaptar esta parte según la estructura de tu modelo de CycleGAN.
+        """
+        from torch import nn
+
+        class SimpleCycleGAN(nn.Module):
+            def __init__(self):  # Cambio aquí: __init__ en lugar de _init_
+                super(SimpleCycleGAN, self).__init__()
+                # Define aquí la arquitectura de tu modelo
+                # Esto es solo un placeholder; ajusta la arquitectura según tu modelo entrenado.
+                self.conv = nn.Conv2d(3, 3, kernel_size=3, padding=1)
+
+            def forward(self, x):
+                return self.conv(x)
+
+        return SimpleCycleGAN()
+
+    def transform(self, image):
+        if self.model is None:
+            st.error("El modelo no está cargado correctamente, no se puede transformar la imagen.")
+            return None
+
+        try:
+            # Transformar la imagen de PIL a tensor
+            transform_to_tensor = transforms.Compose([
+                transforms.Resize((256, 256)),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            ])
+            image_tensor = transform_to_tensor(image).unsqueeze(0)
+
+            # Aplicar la transformación usando el modelo de CycleGAN
+            with torch.no_grad():
+                transformed_tensor = self.model(image_tensor)[0]
+
+            # Convertir el tensor transformado de nuevo a imagen PIL
+            transform_to_image = transforms.Compose([
+                transforms.Normalize((-1, -1, -1), (2, 2, 2)),
+                transforms.ToPILImage()
+            ])
+            transformed_image = transform_to_image(transformed_tensor)
+
+            return transformed_image
+        except Exception as e:
+            st.error(f"Error durante la transformación de la imagen: {e}")
+            return None
+
+# Configuración de la página de Streamlit
+st.title("Transformación de Imágenes con CycleGAN")
+
+# Cargar el modelo
+model_file = st.file_uploader("Sube tu modelo de CycleGAN (.pth)", type=["pth"])
+
+# Cargar la imagen
+uploaded_image = st.file_uploader("Sube una imagen (.jpg, .jpeg, .png)", type=["jpg", "jpeg", "png"])
+
+if model_file and uploaded_image:
+    # Mostrar la imagen original y sus dimensiones
+    image = Image.open(uploaded_image)
+    st.image(image, caption=f"Imagen original - Dimensiones: {image.size}", use_column_width=True)
+
+    # Redimensionar la imagen a 256x256
+    resized_image = image.resize((256, 256))
+    st.image(resized_image, caption=f"Imagen redimensionada a 256x256 - Dimensiones: {resized_image.size}", use_column_width=True)
+
+    # Instanciar el modelo de CycleGAN con el archivo subido
+    model = CycleGANModel(model_file)
+
+    # Transformar la imagen con el modelo cargado
+    if model and model.model is not None:
+        transformed_image = model.transform(resized_image)
+
+        if transformed_image:
+            st.image(transformed_image, caption="Imagen transformada por CycleGAN", use_column_width=True)
+
+            # Botón para descargar la imagen transformada
+            buf = BytesIO()
+            transformed_image.save(buf, format='PNG')
+            byte_im = buf.getvalue()
+
+            st.download_button(
+                label="Descargar imagen transformada",
+                data=byte_im,
+                file_name="imagen_transformada.png",
+                mime="image/png"
+            )
+        else:
+            st.error("No se pudo transformar la imagen debido a un problema con el modelo.")
     else:
-        st.warning("El modelo no ha sido cargado correctamente.")
-else:
-    st.info("Sube ambos archivos para procesar la imagen.")
+        st.error("No se pudo cargar el modelo.")
+elif model_file is None:
+    st.info("Por favor, sube un modelo de CycleGAN en formato .pth")
+elif uploaded_image is None:
+    st.info("Por favor, sube una imagen en formato .jpg, .jpeg o .png")

@@ -5,6 +5,17 @@ import torchvision.transforms as transforms
 import os
 from collections import OrderedDict
 
+# Definir tu modelo aquí o importarlo correctamente
+# Este es un placeholder. Reemplaza esta clase con la definición real de tu modelo.
+class YourModel(torch.nn.Module):
+    def __init__(self):
+        super(YourModel, self).__init__()
+        # Aquí iría la definición del modelo
+        self.conv = torch.nn.Conv2d(3, 3, kernel_size=3, padding=1)
+
+    def forward(self, x):
+        return self.conv(x)
+
 # Título de la aplicación
 st.title("Subir Modelo y Probar Imagen con CycleGAN")
 
@@ -29,7 +40,6 @@ if uploaded_model is not None:
             new_state_dict[name] = v
 
         # Crear una instancia del modelo y cargar el estado
-        from your_model_architecture import YourModel  # Reemplaza con tu propia arquitectura
         model = YourModel()
         model.load_state_dict(new_state_dict)
         model.eval()
@@ -57,7 +67,7 @@ else:
 if uploaded_model is not None and uploaded_image is not None:
     # Transformación de imagen para ser compatible con PyTorch
     transform = transforms.Compose([
-        transforms.ToTensor(),
+        transforms.ToTensor(),  # Asegura que la imagen es un tensor antes de normalizar
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
     ])
 

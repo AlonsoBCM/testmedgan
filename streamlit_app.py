@@ -19,7 +19,12 @@ if uploaded_model is not None:
         f.write(uploaded_model.read())
     # Cargar el modelo con Torch
     try:
-        model = torch.load("model.pth", map_location=torch.device('cpu'))
+        state_dict = torch.load("model.pth", map_location=torch.device('cpu'))
+        # Crear una instancia del modelo y cargar el estado
+        # Nota: Debes definir tu arquitectura de modelo aquí
+        from your_model_architecture import YourModel  # Reemplaza con tu propia arquitectura
+        model = YourModel()
+        model.load_state_dict(state_dict)
         model.eval()
         st.success("Modelo cargado exitosamente.")
     except Exception as e:

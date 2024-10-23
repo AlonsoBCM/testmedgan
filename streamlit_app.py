@@ -6,7 +6,7 @@ from io import BytesIO
 
 # Clase para el modelo de CycleGAN
 class CycleGANModel:
-    def _init_(self, model_data):
+    def __init__(self, model_data):  # Cambio aquí: __init__ en lugar de _init_
         try:
             # Leer el archivo subido desde el buffer de BytesIO
             model_bytes = model_data.read()
@@ -40,8 +40,8 @@ class CycleGANModel:
         from torch import nn
 
         class SimpleCycleGAN(nn.Module):
-            def _init_(self):
-                super(SimpleCycleGAN, self)._init_()
+            def __init__(self):  # Cambio aquí: __init__ en lugar de _init_
+                super(SimpleCycleGAN, self).__init__()
                 # Define aquí la arquitectura de tu modelo
                 # Esto es solo un placeholder; ajusta la arquitectura según tu modelo entrenado.
                 self.conv = nn.Conv2d(3, 3, kernel_size=3, padding=1)

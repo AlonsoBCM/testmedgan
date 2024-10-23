@@ -10,9 +10,14 @@ class CycleGANModel:
         try:
             # Leer el archivo subido desde el buffer de BytesIO
             model_bytes = model_data.read()
+            
+            # Verificar el tamaño del archivo subido
+            st.write(f"Tamaño del archivo subido: {len(model_bytes)} bytes")
+
+            # Convertir el archivo a BytesIO para ser leído por torch.load
             model_buffer = BytesIO(model_bytes)
             
-            # Cargar el modelo desde el buffer
+            # Intentar cargar el estado del modelo
             state_dict = torch.load(model_buffer, map_location=torch.device('cpu'))
 
             # Crear una instancia del modelo base
@@ -21,6 +26,8 @@ class CycleGANModel:
             # Cargar los pesos en el modelo
             self.model.load_state_dict(state_dict)
             self.model.eval()
+
+            st.success("Modelo cargado exitosamente.")
         except Exception as e:
             st.error(f"Error al cargar el modelo: {e}")
             self.model = None
@@ -46,28 +53,33 @@ class CycleGANModel:
 
     def transform(self, image):
         if self.model is None:
+            st.error("El modelo no está cargado correctamente, no se puede transformar la imagen.")
             return None
 
-        # Transformar la imagen de PIL a tensor
-        transform_to_tensor = transforms.Compose([
-            transforms.Resize((256, 256)),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
-        image_tensor = transform_to_tensor(image).unsqueeze(0)
+        try:
+            # Transformar la imagen de PIL a tensor
+            transform_to_tensor = transforms.Compose([
+                transforms.Resize((256, 256)),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            ])
+            image_tensor = transform_to_tensor(image).unsqueeze(0)
 
-        # Aplicar la transformación usando el modelo de CycleGAN
-        with torch.no_grad():
-            transformed_tensor = self.model(image_tensor)[0]
+            # Aplicar la transformación usando el modelo de CycleGAN
+            with torch.no_grad():
+                transformed_tensor = self.model(image_tensor)[0]
 
-        # Convertir el tensor transformado de nuevo a imagen PIL
-        transform_to_image = transforms.Compose([
-            transforms.Normalize((-1, -1, -1), (2, 2, 2)),
-            transforms.ToPILImage()
-        ])
-        transformed_image = transform_to_image(transformed_tensor)
+            # Convertir el tensor transformado de nuevo a imagen PIL
+            transform_to_image = transforms.Compose([
+                transforms.Normalize((-1, -1, -1), (2, 2, 2)),
+                transforms.ToPILImage()
+            ])
+            transformed_image = transform_to_image(transformed_tensor)
 
-        return transformed_image
+            return transformed_image
+        except Exception as e:
+            st.error(f"Error durante la transformación de la imagen: {e}")
+            return None
 
 # Configuración de la página de Streamlit
 st.title("Transformación de Imágenes con CycleGAN")

@@ -8,9 +8,11 @@ from io import BytesIO
 # Definir el modelo de CycleGAN
 class CycleGANModel:
     def _init_(self, model_url):
-        # Descargar el modelo desde GitHub
+        # Descargar el modelo desde la URL proporcionada
         response = requests.get(model_url)
         response.raise_for_status()  # Verifica si la descarga fue exitosa
+
+        # Cargar el modelo de CycleGAN en modo evaluación
         model_data = BytesIO(response.content)
         self.model = torch.load(model_data, map_location=torch.device('cpu'))
         self.model.eval()
@@ -37,11 +39,11 @@ class CycleGANModel:
 
         return transformed_image
 
-# URL del modelo de CycleGAN
+# URL del modelo de CycleGAN (ajustada para descargar el modelo desde GitHub)
 model_url = "https://github.com/AlonsoBCM/testmedgan/raw/main/modelos/modelo_entrenado.pth"
 
+# Intentar cargar el modelo de CycleGAN
 try:
-    # Cargar el modelo de CycleGAN
     model = CycleGANModel(model_url)
 
     # Configuración de la página de Streamlit

@@ -5,6 +5,8 @@ import torchvision.transforms as transforms
 import requests
 from io import BytesIO
 
+# URL del modelo de CycleGAN
+model_url = "https://github.com/AlonsoBCM/testmedgan/raw/main/modelos/modelo_entrenado.pth"
 # Clase para el modelo de CycleGAN
 class CycleGANModel:
     def _init_(self, model_url):
@@ -39,8 +41,6 @@ class CycleGANModel:
 
         return transformed_image
 
-# URL del modelo de CycleGAN
-model_url = "https://github.com/AlonsoBCM/testmedgan/raw/main/modelos/modelo_entrenado.pth"
 
 # Intentar cargar el modelo de CycleGAN
 try:

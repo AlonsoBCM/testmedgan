@@ -50,6 +50,10 @@ if uploaded_image is not None:
     # Redimensionar la imagen a 256x256
     image = image.resize((256, 256))
     st.image(image, caption="Imagen redimensionada (256x256)", use_column_width=True)
+
+    # Convertir la imagen a blanco y negro
+    image = image.convert('L')
+    st.image(image, caption="Imagen en blanco y negro", use_column_width=True)
 else:
     st.warning("Por favor, sube una imagen (.png o .jpg)")
 
@@ -58,7 +62,7 @@ if uploaded_model is not None and uploaded_image is not None:
     # Transformación de imagen para ser compatible con PyTorch
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+        transforms.Normalize(mean=[0.5], std=[0.5])  # Normalización para una sola canal (blanco y negro)
     ])
 
     # Aplicar transformación a la imagen

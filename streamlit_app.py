@@ -38,7 +38,7 @@ if uploaded_file is not None:
     model = create_model(opt)
     model.setup(opt)
 
-    # Cargar los pesos del generador
+    # Cargar los pesos del generador desde la carpeta modelos
     model.netG_A.load_state_dict(torch.load(os.path.join(opt.checkpoints_dir, 'latest_net_G_A.pth'), map_location='cpu'))
 
     # Transformaciones de la imagen para adaptarla a la entrada del modelo
@@ -55,12 +55,5 @@ if uploaded_file is not None:
     # Generación de la imagen de salida
     st.write("Generando imagen en estilo ultrasonido...")
     with torch.no_grad():
-        fake_image = model.netG_A(input_tensor)  # Genera la imagen "ultrasonido"
-        fake_image = (fake_image.data + 1) / 2.0  # Reescala al rango [0, 1]
-        fake_image_pil = transforms.ToPILImage()(fake_image.squeeze().cpu())
+        fake_image = model.netG_A(input_tensor)  # Gener
 
-    # Mostrar la imagen generada
-    st.image(fake_image_pil, caption='Imagen Transformada a Estilo Ultrasonido', use_column_width=True)
-
-else:
-    st.write("Por favor, sube una imagen para continuar.")

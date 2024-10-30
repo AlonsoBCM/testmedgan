@@ -2,8 +2,12 @@ import streamlit as st
 import torch
 from PIL import Image
 from torchvision import transforms
-from models import create_model  # Importar la función para crear el modelo desde la carpeta models
+import sys
 import os
+
+# Asegurarse de que Python puede encontrar la carpeta models
+sys.path.append(os.path.abspath("./models"))
+from models.create_model import create_model  # Importar la función para crear el modelo desde la carpeta models
 
 # Configuración inicial de Streamlit
 st.title("Transformación de Imágenes a Estilo Ultrasonido usando CycleGAN")
@@ -33,7 +37,7 @@ if uploaded_file is not None:
     opt = Opt()
     model = create_model(opt)
     model.setup(opt)
-    
+
     # Cargar los pesos del generador
     model.netG_A.load_state_dict(torch.load(os.path.join(opt.checkpoints_dir, 'latest_net_G_A.pth'), map_location='cpu'))
 

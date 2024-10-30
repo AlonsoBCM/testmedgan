@@ -1,50 +1,62 @@
 import streamlit as st
 import torch
-import torchvision.transforms as transforms
 from PIL import Image
-from modelos import Generator  # Ajustar para importar desde el directorio correcto
+from torchvision import transforms
+from models import create_model  # Importar la función para crear el modelo desde la carpeta models
+import os
 
-# Paso 1: Cargar el Modelo del Generador
-# Ruta al archivo del generador preentrenado
-model_path = "modelos/latest_net_G_A.pth"  # Asegúrate de proporcionar la ruta correcta al archivo
+# Configuración inicial de Streamlit
+st.title("Transformación de Imágenes a Estilo Ultrasonido usando CycleGAN")
+st.write("Sube una imagen y observa cómo CycleGAN la convierte a un estilo ultrasonido.")
 
-# Crear una instancia del generador
-# Asegúrate de que el modelo Generator esté definido adecuadamente en tu código (similar al usado en el entrenamiento)
-netG = Generator(input_nc=3, output_nc=3, ngf=64)  # Define los parámetros según la arquitectura del modelo que usaste para entrenar
-netG.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
-netG.eval()  # Cambiar a modo de evaluación
+# Subida de imagen
+uploaded_file = st.file_uploader("Elige una imagen...", type=["jpg", "jpeg", "png"])
 
-# Paso 2: Definir la Función para Transformar la Imagen
-def transform_image(input_image):
-    transform = transforms.Compose([
-        transforms.Resize((256, 256)),  # Cambia el tamaño si el modelo fue entrenado con un tamaño diferente
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),  # Normaliza como se hizo durante el entrenamiento
-    ])
-    return transform(input_image).unsqueeze(0)
-
-# Paso 3: Interfaz en Streamlit
-st.title("Aplicación para Transformar Imágenes a Ultrasonido con Generador G_A")
-
-# Subir la imagen
-uploaded_file = st.file_uploader("Elige una imagen para transformar...", type=["jpg", "jpeg", "png"])
-
+# Verifica si se ha subido una imagen
 if uploaded_file is not None:
-    # Mostrar la imagen original
-    input_image = Image.open(uploaded_file).convert("RGB")
-    st.image(input_image, caption="Imagen Original", use_column_width=True)
+    # Abre la imagen
+    input_image = Image.open(uploaded_file).convert('RGB')
+    st.image(input_image, caption='Imagen Original', use_column_width=True)
 
-    # Transformar la imagen y pasarla por el generador
-    st.write("Transformando la imagen, por favor espera...")
-    transformed_image = transform_image(input_image)
+    # Carga del modelo
+    st.write("Cargando el modelo...")
+
+    # Configuración del modelo
+    class Opt:
+        def __init__(self):
+            self.model = 'cycle_gan'
+            self.checkpoints_dir = './modelos'  # Carpeta donde están los pesos
+            self.name = 'cyclegan_ultrasonido'  # Nombre ficticio para configuración
+            self.gpu_ids = [0] if torch.cuda.is_available() else []
+            self.isTrain = False
+
+    opt = Opt()
+    model = create_model(opt)
+    model.setup(opt)
     
+    # Cargar los pesos del generador
+    model.netG_A.load_state_dict(torch.load(os.path.join(opt.checkpoints_dir, 'latest_net_G_A.pth'), map_location='cpu'))
+
+    # Transformaciones de la imagen para adaptarla a la entrada del modelo
+    transform = transforms.Compose([
+        transforms.Resize((256, 256)),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
+
+    input_tensor = transform(input_image).unsqueeze(0)  # Añadir batch dimension
+    if torch.cuda.is_available():
+        input_tensor = input_tensor.cuda()
+
+    # Generación de la imagen de salida
+    st.write("Generando imagen en estilo ultrasonido...")
     with torch.no_grad():
-        fake_image = netG(transformed_image)  # Pasar la imagen por el generador
+        fake_image = model.netG_A(input_tensor)  # Genera la imagen "ultrasonido"
+        fake_image = (fake_image.data + 1) / 2.0  # Reescala al rango [0, 1]
+        fake_image_pil = transforms.ToPILImage()(fake_image.squeeze().cpu())
 
-    # Convertir la imagen de tensor a PIL para mostrar en Streamlit
-    fake_image = fake_image.squeeze(0)  # Quitar el batch dimension
-    fake_image = (fake_image * 0.5) + 0.5  # Desnormalizar
-    fake_image = transforms.ToPILImage()(fake_image)
+    # Mostrar la imagen generada
+    st.image(fake_image_pil, caption='Imagen Transformada a Estilo Ultrasonido', use_column_width=True)
 
-    # Mostrar la imagen transformada
-    st.image(fake_image, caption="Imagen Transformada (Ultrasonido)", use_column_width=True)
+else:
+    st.write("Por favor, sube una imagen para continuar.")

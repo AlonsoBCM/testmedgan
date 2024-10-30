@@ -6,7 +6,7 @@ from models import Generator  # Asegúrate de que esta clase esté definida en t
 
 # Paso 1: Cargar el Modelo del Generador
 # Ruta al archivo del generador preentrenado
-model_path = "latest_net_G_A.pth"  # Asegúrate de proporcionar la ruta correcta al archivo
+model_path = "https://github.com/AlonsoBCM/testmedgan/blob/main/modelos/latest_net_G_A.pth"  # Asegúrate de proporcionar la ruta correcta al archivo
 
 # Crear una instancia del generador
 # Asegúrate de que el modelo Generator esté definido adecuadamente en tu código (similar al usado en el entrenamiento)

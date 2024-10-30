@@ -3,3 +3,6 @@ pillow
 torch
 torchvision
 requests
+numpy
+opencv-python  # Opcional, para procesamiento de imágenes más complejo
+matplotlib  # Opcional, para visualización adicional

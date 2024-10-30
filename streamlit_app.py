@@ -5,7 +5,7 @@ from torchvision import transforms
 import sys
 import os
 
-# Asegurarse de que Python puede encontrar la carpeta models
+# Añadir la carpeta models al sistema PATH
 sys.path.append(os.path.abspath("./models"))
 from models.create_model import create_model  # Importar la función para crear el modelo desde la carpeta models
 
@@ -55,5 +55,12 @@ if uploaded_file is not None:
     # Generación de la imagen de salida
     st.write("Generando imagen en estilo ultrasonido...")
     with torch.no_grad():
-        fake_image = model.netG_A(input_tensor)  # Gener
+        fake_image = model.netG_A(input_tensor)  # Genera la imagen "ultrasonido"
+        fake_image = (fake_image.data + 1) / 2.0  # Reescala al rango [0, 1]
+        fake_image_pil = transforms.ToPILImage()(fake_image.squeeze().cpu())
 
+    # Mostrar la imagen generada
+    st.image(fake_image_pil, caption='Imagen Transformada a Estilo Ultrasonido', use_column_width=True)
+
+else:
+    st.write("Por favor, sube una imagen para continuar.")

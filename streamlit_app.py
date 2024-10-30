@@ -2,11 +2,11 @@ import streamlit as st
 import torch
 import torchvision.transforms as transforms
 from PIL import Image
-from models import Generator  # Asegúrate de que esta clase esté definida en tu código
+from modelos import Generator  # Ajustar para importar desde el directorio correcto
 
 # Paso 1: Cargar el Modelo del Generador
 # Ruta al archivo del generador preentrenado
-model_path = "https://github.com/AlonsoBCM/testmedgan/blob/main/modelos/latest_net_G_A.pth"  # Asegúrate de proporcionar la ruta correcta al archivo
+model_path = "modelos/latest_net_G_A.pth"  # Asegúrate de proporcionar la ruta correcta al archivo
 
 # Crear una instancia del generador
 # Asegúrate de que el modelo Generator esté definido adecuadamente en tu código (similar al usado en el entrenamiento)
